@@ -1,0 +1,95 @@
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Add Report";
+    var appointmentId = ViewBag.AppointmentId;
+}
+
+<main id="main" class="main">
+
+    <div class="pagetitle">
+        <h1>Add Report</h1>
+        <nav>
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a asp-controller="Doctor" asp-action="TodayQueue">Today's Queue</a></li>
+                <li class="breadcrumb-item active">Add Report</li>
+            </ol>
+        </nav>
+    </div>
+
+    <section class="section">
+        <div class="row">
+            <div class="col-lg-6 mx-auto">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Report for Appointment #@appointmentId</h5>
+
+                        @if (!string.IsNullOrEmpty(ViewBag.Error as string))
+                        {
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <i class="bi bi-exclamation-triangle me-1"></i>
+                                @ViewBag.Error
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        }
+
+                        <form class="row g-3 needs-validation" asp-controller="Doctor" asp-action="AddReport"
+                              asp-route-appointmentId="@appointmentId" method="post" novalidate>
+
+                            <!-- Diagnosis -->
+                            <div class="col-12">
+                                <label for="diagnosis" class="form-label">Diagnosis <span class="text-danger">*</span></label>
+                                <input type="text" name="diagnosis" class="form-control" id="diagnosis"
+                                       placeholder="e.g. Viral Fever" required>
+                                <div class="invalid-feedback">Diagnosis is required.</div>
+                            </div>
+
+                            <!-- Test Recommended -->
+                            <div class="col-12">
+                                <label for="testRecommended" class="form-label">Test Recommended</label>
+                                <input type="text" name="testRecommended" class="form-control" id="testRecommended"
+                                       placeholder="e.g. Blood Test (optional)">
+                            </div>
+
+                            <!-- Remarks -->
+                            <div class="col-12">
+                                <label for="remarks" class="form-label">Remarks</label>
+                                <textarea name="remarks" class="form-control" id="remarks" rows="3"
+                                          placeholder="e.g. Rest for 3 days (optional)"></textarea>
+                            </div>
+
+                            <!-- Submit -->
+                            <div class="col-12 text-end">
+                                <a asp-controller="Doctor" asp-action="TodayQueue" class="btn btn-secondary me-2">
+                                    <i class="bi bi-arrow-left me-1"></i> Back
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-circle me-1"></i> Save Report
+                                </button>
+                            </div>
+
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+@section Scripts {
+    <script>
+        (function () {
+            'use strict';
+            var forms = document.querySelectorAll('.needs-validation');
+            Array.prototype.slice.call(forms).forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                }, false);
+            });
+        })();
+    </script>
+}

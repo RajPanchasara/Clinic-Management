@@ -1,0 +1,107 @@
+@using FrontEnd_Exam_2.Models
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Today's Queue";
+    var queue = ViewBag.Queue as List<DoctorQueueItem> ?? new List<DoctorQueueItem>();
+}
+
+<main id="main" class="main">
+
+    <div class="pagetitle">
+        <h1>Today's Queue</h1>
+        <nav>
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a asp-controller="Doctor" asp-action="TodayQueue">Home</a></li>
+                <li class="breadcrumb-item active">Today's Queue</li>
+            </ol>
+        </nav>
+    </div>
+
+    @if (!string.IsNullOrEmpty(TempData["Success"] as string))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle me-1"></i>
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(ViewBag.Error as string))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            @ViewBag.Error
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <section class="section">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Patients for Today</h5>
+
+                        @if (queue.Count == 0)
+                        {
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle me-1"></i> No patients in queue today.
+                            </div>
+                        }
+                        else
+                        {
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Token</th>
+                                        <th>Patient Name</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in queue)
+                                    {
+                                        var statusBadge = item.Status switch
+                                        {
+                                            "waiting" => "bg-warning text-dark",
+                                            "in-progress" => "bg-primary",
+                                            "in_progress" => "bg-primary",
+                                            "done" => "bg-success",
+                                            "skipped" => "bg-secondary",
+                                            _ => "bg-info"
+                                        };
+
+                                        <tr>
+                                            <td><span class="badge bg-dark fs-6">@item.TokenNumber</span></td>
+                                            <td>@item.PatientName</td>
+                                            <td><span class="badge @statusBadge">@item.Status.ToUpper()</span></td>
+                                            <td>
+                                                @if (item.Status == "in-progress" || item.Status == "in_progress" || item.Status == "done")
+                                                {
+                                                    <a asp-controller="Doctor" asp-action="AddPrescription" asp-route-appointmentId="@item.AppointmentId"
+                                                       class="btn btn-primary btn-sm me-1">
+                                                        <i class="bi bi-capsule"></i> Prescription
+                                                    </a>
+                                                    <a asp-controller="Doctor" asp-action="AddReport" asp-route-appointmentId="@item.AppointmentId"
+                                                       class="btn btn-info btn-sm text-white">
+                                                        <i class="bi bi-file-medical"></i> Report
+                                                    </a>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted small">Not ready</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</main>

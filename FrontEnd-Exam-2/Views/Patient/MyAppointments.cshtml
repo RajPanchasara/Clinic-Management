@@ -1,0 +1,111 @@
+@using FrontEnd_Exam_2.Models
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "My Appointments";
+    var appointments = ViewBag.Appointments as List<Appointment> ?? new List<Appointment>();
+}
+
+<main id="main" class="main">
+
+    <div class="pagetitle">
+        <h1>My Appointments</h1>
+        <nav>
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a asp-controller="Patient" asp-action="MyAppointments">Home</a></li>
+                <li class="breadcrumb-item active">My Appointments</li>
+            </ol>
+        </nav>
+    </div>
+
+    @if (!string.IsNullOrEmpty(TempData["Success"] as string))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle me-1"></i>
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(ViewBag.Error as string))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            @ViewBag.Error
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <section class="section">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="card-title">Appointments</h5>
+                            <a asp-controller="Patient" asp-action="BookAppointment" class="btn btn-primary btn-sm">
+                                <i class="bi bi-plus-circle me-1"></i> Book New
+                            </a>
+                        </div>
+
+                        @if (appointments.Count == 0)
+                        {
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle me-1"></i> No appointments found. Book your first appointment!
+                            </div>
+                        }
+                        else
+                        {
+                            <table class="table table-hover datatable">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">#</th>
+                                        <th scope="col">Date</th>
+                                        <th scope="col">Time Slot</th>
+                                        <th scope="col">Status</th>
+                                        <th scope="col">Token</th>
+                                        <th scope="col">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @{ int rowNum = 1; }
+                                    @foreach (var apt in appointments)
+                                    {
+                                        var statusBadge = apt.Status switch
+                                        {
+                                            "scheduled" => "bg-info",
+                                            "queued" => "bg-info",
+                                            "waiting" => "bg-warning text-dark",
+                                            "in-progress" => "bg-primary",
+                                            "in_progress" => "bg-primary",
+                                            "done" => "bg-success",
+                                            "skipped" => "bg-secondary",
+                                            _ => "bg-secondary"
+                                        };
+
+                                        <tr>
+                                            <th scope="row">@rowNum</th>
+                                            <td>@apt.AppointmentDate</td>
+                                            <td>@apt.TimeSlot</td>
+                                            <td>
+                                                <span class="badge @statusBadge">@apt.Status.ToUpper()</span>
+                                            </td>
+                                            <td>@(apt.QueueEntry?.TokenNumber > 0 ? apt.QueueEntry.TokenNumber.ToString() : "—")</td>
+                                            <td>
+                                                <a asp-controller="Patient" asp-action="AppointmentDetails" asp-route-id="@apt.Id"
+                                                   class="btn btn-outline-primary btn-sm">
+                                                    <i class="bi bi-eye"></i> Details
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        rowNum++;
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</main>

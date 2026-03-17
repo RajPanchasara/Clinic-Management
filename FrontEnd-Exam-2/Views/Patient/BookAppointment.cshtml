@@ -1,0 +1,102 @@
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Book Appointment";
+}
+
+<main id="main" class="main">
+
+    <div class="pagetitle">
+        <h1>Book Appointment</h1>
+        <nav>
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a asp-controller="Patient" asp-action="MyAppointments">Home</a></li>
+                <li class="breadcrumb-item active">Book Appointment</li>
+            </ol>
+        </nav>
+    </div>
+
+    <section class="section">
+        <div class="row">
+            <div class="col-lg-6 mx-auto">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">New Appointment</h5>
+
+                        @if (!string.IsNullOrEmpty(ViewBag.Error as string))
+                        {
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <i class="bi bi-exclamation-triangle me-1"></i>
+                                @ViewBag.Error
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        }
+
+                        <form class="row g-3 needs-validation" asp-controller="Patient" asp-action="BookAppointment" method="post" novalidate>
+
+                            <div class="col-12">
+                                <label for="appointmentDate" class="form-label">Appointment Date <span class="text-danger">*</span></label>
+                                <input type="date" name="appointmentDate" class="form-control" id="appointmentDate"
+                                       value="@ViewBag.AppointmentDate" min="@DateTime.Today.ToString("yyyy-MM-dd")" required>
+                                <div class="invalid-feedback">Please select a date (today or future).</div>
+                            </div>
+
+                            <div class="col-12">
+                                <label for="timeSlot" class="form-label">Time Slot <span class="text-danger">*</span></label>
+                                <select name="timeSlot" class="form-select" id="timeSlot" required>
+                                    <option value="" disabled selected>Select a time slot</option>
+                                    <option value="09:00-09:15" selected="@(ViewBag.TimeSlot == "09:00-09:15")">09:00 - 09:15</option>
+                                    <option value="09:15-09:30" selected="@(ViewBag.TimeSlot == "09:15-09:30")">09:15 - 09:30</option>
+                                    <option value="09:30-09:45" selected="@(ViewBag.TimeSlot == "09:30-09:45")">09:30 - 09:45</option>
+                                    <option value="09:45-10:00" selected="@(ViewBag.TimeSlot == "09:45-10:00")">09:45 - 10:00</option>
+                                    <option value="10:00-10:15" selected="@(ViewBag.TimeSlot == "10:00-10:15")">10:00 - 10:15</option>
+                                    <option value="10:15-10:30" selected="@(ViewBag.TimeSlot == "10:15-10:30")">10:15 - 10:30</option>
+                                    <option value="10:30-10:45" selected="@(ViewBag.TimeSlot == "10:30-10:45")">10:30 - 10:45</option>
+                                    <option value="10:45-11:00" selected="@(ViewBag.TimeSlot == "10:45-11:00")">10:45 - 11:00</option>
+                                    <option value="11:00-11:15" selected="@(ViewBag.TimeSlot == "11:00-11:15")">11:00 - 11:15</option>
+                                    <option value="11:15-11:30" selected="@(ViewBag.TimeSlot == "11:15-11:30")">11:15 - 11:30</option>
+                                    <option value="11:30-11:45" selected="@(ViewBag.TimeSlot == "11:30-11:45")">11:30 - 11:45</option>
+                                    <option value="11:45-12:00" selected="@(ViewBag.TimeSlot == "11:45-12:00")">11:45 - 12:00</option>
+                                    <option value="14:00-14:15" selected="@(ViewBag.TimeSlot == "14:00-14:15")">14:00 - 14:15</option>
+                                    <option value="14:15-14:30" selected="@(ViewBag.TimeSlot == "14:15-14:30")">14:15 - 14:30</option>
+                                    <option value="14:30-14:45" selected="@(ViewBag.TimeSlot == "14:30-14:45")">14:30 - 14:45</option>
+                                    <option value="14:45-15:00" selected="@(ViewBag.TimeSlot == "14:45-15:00")">14:45 - 15:00</option>
+                                    <option value="15:00-15:15" selected="@(ViewBag.TimeSlot == "15:00-15:15")">15:00 - 15:15</option>
+                                    <option value="15:15-15:30" selected="@(ViewBag.TimeSlot == "15:15-15:30")">15:15 - 15:30</option>
+                                    <option value="15:30-15:45" selected="@(ViewBag.TimeSlot == "15:30-15:45")">15:30 - 15:45</option>
+                                    <option value="15:45-16:00" selected="@(ViewBag.TimeSlot == "15:45-16:00")">15:45 - 16:00</option>
+                                </select>
+                                <div class="invalid-feedback">Please select a time slot.</div>
+                            </div>
+
+                            <div class="col-12 text-end">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-calendar-plus me-1"></i> Book Appointment
+                                </button>
+                            </div>
+
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+@section Scripts {
+    <script>
+        (function () {
+            'use strict';
+            var forms = document.querySelectorAll('.needs-validation');
+            Array.prototype.slice.call(forms).forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                }, false);
+            });
+        })();
+    </script>
+}

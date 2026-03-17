@@ -1,0 +1,152 @@
+@using FrontEnd_Exam_2.Models
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Daily Queue";
+    var queue = ViewBag.Queue as List<QueueEntry> ?? new List<QueueEntry>();
+    var selectedDate = ViewBag.SelectedDate as string ?? DateTime.Today.ToString("yyyy-MM-dd");
+}
+
+<main id="main" class="main">
+
+    <div class="pagetitle">
+        <h1>Daily Queue</h1>
+        <nav>
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a asp-controller="Receptionist" asp-action="Queue">Home</a></li>
+                <li class="breadcrumb-item active">Daily Queue</li>
+            </ol>
+        </nav>
+    </div>
+
+    @if (!string.IsNullOrEmpty(TempData["Success"] as string))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle me-1"></i>
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(TempData["Error"] as string))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(ViewBag.Error as string))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            @ViewBag.Error
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Date Filter -->
+    <section class="section">
+        <div class="row mb-3">
+            <div class="col-lg-4">
+                <form asp-controller="Receptionist" asp-action="Queue" method="get" class="d-flex gap-2">
+                    <input type="date" name="date" class="form-control" value="@selectedDate">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Queue for @selectedDate</h5>
+
+                        @if (queue.Count == 0)
+                        {
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle me-1"></i> No queue entries for this date.
+                            </div>
+                        }
+                        else
+                        {
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Token</th>
+                                        <th>Patient Name</th>
+                                        <th>Phone</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var entry in queue)
+                                    {
+                                        var statusBadge = entry.Status switch
+                                        {
+                                            "waiting" => "bg-warning text-dark",
+                                            "in-progress" => "bg-primary",
+                                            "in_progress" => "bg-primary",
+                                            "done" => "bg-success",
+                                            "skipped" => "bg-secondary",
+                                            _ => "bg-info"
+                                        };
+
+                                        <tr>
+                                            <td><span class="badge bg-dark fs-6">@entry.TokenNumber</span></td>
+                                            <td>@(entry.Appointment?.Patient?.Name ?? "—")</td>
+                                            <td>@(entry.Appointment?.Patient?.Phone ?? "—")</td>
+                                            <td>
+                                                <span class="badge @statusBadge">@entry.Status.ToUpper()</span>
+                                            </td>
+                                            <td>
+                                                @if (entry.Status == "waiting")
+                                                {
+                                                    <form asp-controller="Receptionist" asp-action="UpdateStatus" method="post" class="d-inline">
+                                                        <input type="hidden" name="id" value="@entry.Id" />
+                                                        <input type="hidden" name="date" value="@selectedDate" />
+                                                        <input type="hidden" name="status" value="in-progress" />
+                                                        <button type="submit" class="btn btn-primary btn-sm me-1">
+                                                            <i class="bi bi-play-fill"></i> In Progress
+                                                        </button>
+                                                    </form>
+                                                    <form asp-controller="Receptionist" asp-action="UpdateStatus" method="post" class="d-inline">
+                                                        <input type="hidden" name="id" value="@entry.Id" />
+                                                        <input type="hidden" name="date" value="@selectedDate" />
+                                                        <input type="hidden" name="status" value="skipped" />
+                                                        <button type="submit" class="btn btn-secondary btn-sm">
+                                                            <i class="bi bi-skip-forward-fill"></i> Skip
+                                                        </button>
+                                                    </form>
+                                                }
+                                                else if (entry.Status == "in-progress" || entry.Status == "in_progress")
+                                                {
+                                                    <form asp-controller="Receptionist" asp-action="UpdateStatus" method="post" class="d-inline">
+                                                        <input type="hidden" name="id" value="@entry.Id" />
+                                                        <input type="hidden" name="date" value="@selectedDate" />
+                                                        <input type="hidden" name="status" value="done" />
+                                                        <button type="submit" class="btn btn-success btn-sm">
+                                                            <i class="bi bi-check-circle"></i> Done
+                                                        </button>
+                                                    </form>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">—</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</main>

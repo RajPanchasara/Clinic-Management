@@ -1,0 +1,115 @@
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Admin Dashboard";
+}
+
+<main id="main" class="main">
+
+    <div class="pagetitle">
+        <h1>Dashboard</h1>
+        <nav>
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a asp-controller="Admin" asp-action="Dashboard">Home</a></li>
+                <li class="breadcrumb-item active">Dashboard</li>
+            </ol>
+        </nav>
+    </div><!-- End Page Title -->
+
+    @if (!string.IsNullOrEmpty(ViewBag.Error as string))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            @ViewBag.Error
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <section class="section dashboard">
+        <div class="row">
+
+            <!-- Clinic Info Card -->
+            <div class="col-lg-12">
+                <div class="card info-card">
+                    <div class="card-body">
+                        <h5 class="card-title">Clinic Information</h5>
+                        <div class="d-flex align-items-center">
+                            <div class="card-icon rounded-circle d-flex align-items-center justify-content-center"
+                                 style="background: #e0f0ff; width: 60px; height: 60px;">
+                                <i class="bi bi-hospital" style="color: #4154f1; font-size: 28px;"></i>
+                            </div>
+                            <div class="ps-3">
+                                <h6 style="font-size: 22px; font-weight: 700; color: #012970;">@ViewBag.ClinicName</h6>
+                                <span class="text-muted small">
+                                    Code: <strong>@ViewBag.ClinicCode</strong>
+                                    &nbsp;|&nbsp;
+                                    ID: <strong>@ViewBag.ClinicId</strong>
+                                    &nbsp;|&nbsp;
+                                    Created: <strong>@ViewBag.CreatedAt</strong>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div><!-- End Clinic Info Card -->
+
+            <!-- Users Count Card -->
+            <div class="col-xxl-4 col-md-4">
+                <div class="card info-card sales-card">
+                    <div class="card-body">
+                        <h5 class="card-title">Total Users</h5>
+                        <div class="d-flex align-items-center">
+                            <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                                <i class="bi bi-people"></i>
+                            </div>
+                            <div class="ps-3">
+                                <h6>@ViewBag.UserCount</h6>
+                                <span class="text-success small pt-1 fw-bold">Users</span>
+                                <span class="text-muted small pt-2 ps-1">in this clinic</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div><!-- End Users Count Card -->
+
+            <!-- Appointments Count Card -->
+            <div class="col-xxl-4 col-md-4">
+                <div class="card info-card revenue-card">
+                    <div class="card-body">
+                        <h5 class="card-title">Total Appointments</h5>
+                        <div class="d-flex align-items-center">
+                            <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                                <i class="bi bi-calendar-check"></i>
+                            </div>
+                            <div class="ps-3">
+                                <h6>@ViewBag.AppointmentCount</h6>
+                                <span class="text-primary small pt-1 fw-bold">Appointments</span>
+                                <span class="text-muted small pt-2 ps-1">booked</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div><!-- End Appointments Count Card -->
+
+            <!-- Queue Count Card -->
+            <div class="col-xxl-4 col-md-4">
+                <div class="card info-card customers-card">
+                    <div class="card-body">
+                        <h5 class="card-title">Queue Entries</h5>
+                        <div class="d-flex align-items-center">
+                            <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                                <i class="bi bi-list-ol"></i>
+                            </div>
+                            <div class="ps-3">
+                                <h6>@ViewBag.QueueCount</h6>
+                                <span class="text-danger small pt-1 fw-bold">Queue</span>
+                                <span class="text-muted small pt-2 ps-1">entries</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div><!-- End Queue Count Card -->
+
+        </div>
+    </section>
+
+</main><!-- End #main -->

@@ -1,0 +1,79 @@
+@using FrontEnd_Exam_2.Models
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "My Prescriptions";
+    var prescriptions = ViewBag.Prescriptions as List<Prescription> ?? new List<Prescription>();
+}
+
+<main id="main" class="main">
+
+    <div class="pagetitle">
+        <h1>My Prescriptions</h1>
+        <nav>
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a asp-controller="Patient" asp-action="MyAppointments">Home</a></li>
+                <li class="breadcrumb-item active">My Prescriptions</li>
+            </ol>
+        </nav>
+    </div>
+
+    @if (!string.IsNullOrEmpty(ViewBag.Error as string))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            @ViewBag.Error
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <section class="section">
+        <div class="row">
+            <div class="col-lg-12">
+                @if (prescriptions.Count == 0)
+                {
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-1"></i> No prescriptions found.
+                    </div>
+                }
+                else
+                {
+                    @foreach (var rx in prescriptions)
+                    {
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="bi bi-capsule me-2"></i>Prescription #@rx.Id
+                                    <small class="text-muted"> — Appointment #@rx.AppointmentId</small>
+                                </h5>
+                                <table class="table table-sm table-bordered">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Medicine</th>
+                                            <th>Dosage</th>
+                                            <th>Duration</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var med in rx.Medicines)
+                                        {
+                                            <tr>
+                                                <td>@med.Name</td>
+                                                <td>@med.Dosage</td>
+                                                <td>@med.Duration</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                                @if (!string.IsNullOrEmpty(rx.Notes))
+                                {
+                                    <p class="text-muted mb-0"><strong>Notes:</strong> @rx.Notes</p>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </section>
+
+</main>

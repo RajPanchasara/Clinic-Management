@@ -1,0 +1,747 @@
+Clinic Queue Management API
+
+Overview
+
+Clinic Queue Management System (CMS) is a full-stack, multi-tenant clinic management API. It supports multiple clinics; each clinic has its own admin, doctors, receptionists, and patients. All data is scoped by clinic – users only see and act on data for their assigned clinic.
+
+Student accounts: Each student receives a unique username and password that is already linked to a specific clinic. When implementing the frontend, students must build the UI and flows for their assigned clinic only, using the credentials they receive.
+
+Student login (for frontend implementation):
+
+Username: enrollment@darshan.ac.in
+Password: password123
+-------------------------------------------
+Authentication
+
+Login: POST /auth/login with email and password. Returns a JWT and user object (id, name, email, role, clinicId, clinicName, clinicCode).
+Protected endpoints: Send the token in the header: Authorization: Bearer <token>.
+JWT payload includes userId, role, and clinicId. The API uses these to enforce role-based access and clinic isolation.
+No public registration. Clinics and admins are created via database seed or backend script; admins create receptionists, doctors, and patients from the Admin UI. New users sign in with the email/password set by the admin.
+
+Errors: 401 = missing or invalid token; 403 = valid token but role not allowed or user has no clinic.
+-------------------------------------------
+Roles & Capabilities
+
+
+Admin		Owns one clinic.		View clinic info and counts; list users; create receptionists, doctors, and patients (name, email, password, role).
+
+Patient 	Belongs to one clinic.		Book appointments; view my appointments (with queue token/status); view appointment details with prescription and report; view my prescriptions and my reports.
+
+Receptionist	Belongs to one clinic.		Get daily queue for a date (date=YYYY-MM-DD); update queue entry status (waiting → in-progress/skipped, in-progress → done).
+
+Doctor			Belongs to one clinic.		Get today's queue (token, patient, appointmentId); add prescription (medicines, notes) and report (diagnosis, tests, remarks) for an appointment.
+
+Each role can access only its allowed endpoints. Data is always filtered by the user's clinicId.
+-------------------------------------------
+Key Concepts
+
+Clinic: Each clinic has a name and a unique code (e.g. STUD-01). Used for multi-tenant isolation.
+Appointment: Patient books a date and time slot. One appointment per slot per clinic per date. On creation, status is set to queued and a queue entry is created.
+Queue: One queue entry per appointment per day. Has a token number (per clinic per date), and status: waiting | in_progress | done | skipped. Receptionist advances status; doctor uses appointmentId to add prescription/report.
+Prescription / Report: One prescription and one report per appointment, added by the doctor (usually when status is in_progress or done).
+Project Walkthrough Video
+Watch the project explanation and walkthrough here: Project walkthrough video
+-------------------------------------------
+Typical Workflows
+
+Admin: Log in → Get clinic info (GET /admin/clinic) → List users (GET /admin/users) → Create doctor/receptionist/patient (POST /admin/users).
+Patient: Log in → Book appointment (POST /appointments) → List my appointments (GET /appointments/my) → Get details with prescription/report (GET /appointments/:id); optionally list /prescriptions/my and /reports/my.
+Receptionist: Log in → Get queue for a date (GET /queue?date=YYYY-MM-DD) → Update status (PATCH /queue/:id) as patients are called or completed.
+Doctor: Log in → Get today's queue (GET /doctor/queue) → For each patient, add prescription (POST /prescriptions/:appointmentId) and/or report (POST /reports/:appointmentId).
+-------------------------------------------
+Servers
+
+Use the Production Server at (https://cmsback.sampaarsh.cloud) . All paths are relative to the selected server.
+-------------------------------------------
+
+Schema for models used in request and response bodies:
+
+Error{
+	error	string > example: Error message
+}
+
+LoginRequest{
+	email*	string($email) > example: doctor1@clinic1.local
+	password*	string > minLength: 1 , example: password123
+}
+
+LoginResponse{
+	token	string > JWT for Authorization header
+
+	user	{
+		id	integer
+		name	string
+		email	string
+		role	string > Enum:[ patient, doctor, receptionist, admin ]
+		clinicId	integer
+		clinicName	string
+		clinicCode	string
+	}
+}
+
+BookAppointmentRequest{
+	appointmentDate*	string($date) > example: 2025-03-10 YYYY-MM-DD, today or future
+	timeSlot*	string > example: 10:00-10:15 Format HH:MM-HH:MM
+}
+
+AddPrescriptionRequest{
+	medicines*	[minItems: 1
+				PrescriptionMedicine{
+					name*	string > example: Paracetamol
+					dosage*	string > example: 500mg
+					duration*	string > example: 5 days
+				}]
+	notes	string > example: After food
+}
+
+AddReportRequest{
+	diagnosis*	string > example: Viral Fever
+	testRecommended	string > example: Blood Test
+	remarks	string > example: Rest for 3 days
+}
+
+AdminCreateUserRequest{
+	name*	string > minLength: 3 , example: John Doe
+	email*	string($email)
+	password*	string
+	minLength: 6
+	role*	string > Enum:[ receptionist, patient, doctor ]
+	phone	string
+}
+
+QueueEntry{
+id	integer
+tokenNumber	integer
+status	string
+Enum:
+[ waiting, in_progress, done, skipped ]
+queueDate	string($date)
+appointmentId	integer
+appointment	{
+patient	{
+name	{
+}
+phone	{
+}
+}
+}
+}
+
+QueueUpdateRequest{
+status*	string
+waiting->in-progress|skipped; in_progress->done
+
+Enum:
+[ in-progress, done, skipped ]
+}
+DoctorQueueItem{
+id	integer
+tokenNumber	integer
+status	string
+patientName	string
+patientId	integer
+appointmentId	integer
+}
+
+PrescriptionMedicine{
+name*	string
+example: Paracetamol
+dosage*	string
+example: 500mg
+duration*	string
+example: 5 days
+}
+
+AddPrescriptionRequest{
+medicines*	[
+minItems: 1
+PrescriptionMedicine{
+name*	string
+example: Paracetamol
+dosage*	string
+example: 500mg
+duration*	string
+example: 5 days
+}]
+notes	string
+example: After food
+}
+
+Appointments
+Patient: book and view appointments
+
+
+
+POST
+/appointments
+Book appointment (Patient)
+
+
+Creates appointment and queue entry. Status set to queued. Date must be today or future; time slot unique per clinic per date.
+
+Parameters
+Try it out
+No parameters
+
+Request body
+
+application/json
+Example Value
+Schema
+{
+  "appointmentDate": "2025-03-10",
+  "timeSlot": "10:00-10:15"
+}
+Responses
+Code	Description	Links
+201	
+Appointment with queueEntry
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+{
+  "id": 0,
+  "appointmentDate": "2026-03-17",
+  "timeSlot": "string",
+  "status": "scheduled",
+  "patientId": 0,
+  "clinicId": 0,
+  "createdAt": "2026-03-17T06:43:19.598Z",
+  "queueEntry": {
+    "id": 0,
+    "tokenNumber": 0,
+    "status": "waiting",
+    "queueDate": "2026-03-17",
+    "appointmentId": 0,
+    "appointment": {
+      "patient": {
+        "name": "string",
+        "phone": "string"
+      }
+    }
+  }
+}
+No links
+400	
+Validation or time slot already booked
+
+Media type
+
+application/json
+Example Value
+Schema
+{
+  "error": "Error message"
+}
+No links
+401	
+Token missing or invalid
+
+No links
+403	
+Forbidden
+
+No links
+
+GET
+/appointments/my
+My appointments (Patient)
+
+
+List appointments for logged-in patient. Includes queueEntry (token, status).
+
+Parameters
+Try it out
+No parameters
+
+Responses
+Curl
+
+curl -X 'GET' \
+  'https://cmsback.sampaarsh.cloud/appointments/my' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjUzMSwicm9sZSI6InBhdGllbnQiLCJjbGluaWNJZCI6NTA4LCJpYXQiOjE3NzM3Mjg1OTcsImV4cCI6MTc3NDMzMzM5N30.hL6UNKNwiwJGiXUf5soUEmXc7kby3nHl9JRh05Otloo'
+Request URL
+https://cmsback.sampaarsh.cloud/appointments/my
+Server response
+Code	Details
+200	
+Response body
+Download
+[]
+Response headers
+ access-control-allow-credentials: true 
+ connection: keep-alive 
+ content-length: 2 
+ content-type: application/json; charset=utf-8 
+ date: Tue,17 Mar 2026 06:42:13 GMT 
+ etag: W/"2-l9Fw4VUO7kr8CvBlt4zaMCqXZ0w" 
+ server: nginx/1.24.0 (Ubuntu) 
+ vary: Origin 
+ x-powered-by: Express 
+Responses
+Code	Description	Links
+200	
+List of appointments
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+[
+  {
+    "id": 0,
+    "appointmentDate": "2026-03-17",
+    "timeSlot": "string",
+    "status": "scheduled",
+    "patientId": 0,
+    "clinicId": 0,
+    "createdAt": "2026-03-17T06:43:19.600Z",
+    "queueEntry": {
+      "id": 0,
+      "tokenNumber": 0,
+      "status": "waiting",
+      "queueDate": "2026-03-17",
+      "appointmentId": 0,
+      "appointment": {
+        "patient": {
+          "name": "string",
+          "phone": "string"
+        }
+      }
+    }
+  }
+]
+No links
+401	
+Token missing or invalid
+
+No links
+403	
+Forbidden
+
+No links
+
+GET
+/appointments/{id}
+Appointment details with prescription and report (Patient)
+
+
+Single appointment by ID. Includes prescription (medicines array) and report if present.
+
+Parameters
+Try it out
+Name	Description
+id *
+integer
+(path)
+531
+Responses
+Curl
+
+curl -X 'GET' \
+  'https://cmsback.sampaarsh.cloud/appointments/531' \
+  -H 'accept: */*' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjUzMSwicm9sZSI6InBhdGllbnQiLCJjbGluaWNJZCI6NTA4LCJpYXQiOjE3NzM3Mjg1OTcsImV4cCI6MTc3NDMzMzM5N30.hL6UNKNwiwJGiXUf5soUEmXc7kby3nHl9JRh05Otloo'
+Request URL
+https://cmsback.sampaarsh.cloud/appointments/531
+Server response
+Code	Details
+404	
+Error: Not Found
+
+Response body
+Download
+{
+  "error": "Appointment not found"
+}
+Response headers
+ access-control-allow-credentials: true 
+ connection: keep-alive 
+ content-length: 33 
+ content-type: application/json; charset=utf-8 
+ date: Tue,17 Mar 2026 06:42:32 GMT 
+ etag: W/"21-LaqIWnbcsRF0Ylj3AjG+OmdLuzc" 
+ server: nginx/1.24.0 (Ubuntu) 
+ vary: Origin 
+ x-powered-by: Express 
+Responses
+Code	Description	Links
+200	
+Appointment with prescription and report
+
+No links
+400	
+Invalid id
+
+No links
+401	
+Token missing or invalid
+
+No links
+403	
+Forbidden
+
+No links
+404	
+Appointment not found
+
+Queue
+Receptionist: daily queue and status updates
+
+
+
+GET
+/queue
+Daily queue (Receptionist)
+
+
+Queue for date. Query: date=YYYY-MM-DD. Sorted by token. Includes appointment.patient (name, phone).
+
+Parameters
+Cancel
+Name	Description
+date *
+string($date)
+(query)
+2025-03-10
+Execute
+Clear
+Responses
+Curl
+
+curl -X 'GET' \
+  'https://cmsback.sampaarsh.cloud/queue?date=2025-03-10' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjU0OSwicm9sZSI6InJlY2VwdGlvbmlzdCIsImNsaW5pY0lkIjo1MDgsImlhdCI6MTc3MzcyOTg2MCwiZXhwIjoxNzc0MzM0NjYwfQ.sBWtXzB8xBJxZo1_lfqdyL52J5ThL-zeTIioXYuEWdQ'
+Request URL
+https://cmsback.sampaarsh.cloud/queue?date=2025-03-10
+Server response
+Code	Details
+200	
+Response body
+Download
+[]
+Response headers
+ access-control-allow-credentials: true 
+ connection: keep-alive 
+ content-length: 2 
+ content-type: application/json; charset=utf-8 
+ date: Tue,17 Mar 2026 06:44:41 GMT 
+ etag: W/"2-l9Fw4VUO7kr8CvBlt4zaMCqXZ0w" 
+ server: nginx/1.24.0 (Ubuntu) 
+ vary: Origin 
+ x-powered-by: Express 
+Responses
+Code	Description	Links
+200	
+List of queue entries
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+[
+  {
+    "id": 0,
+    "tokenNumber": 0,
+    "status": "waiting",
+    "queueDate": "2026-03-17",
+    "appointmentId": 0,
+    "appointment": {
+      "patient": {
+        "name": "string",
+        "phone": "string"
+      }
+    }
+  }
+]
+No links
+400	
+Valid date required (YYYY-MM-DD)
+
+No links
+401	
+Token missing or invalid
+
+No links
+403	
+Forbidden
+
+No links
+
+PATCH
+/queue/{id}
+Update queue status (Receptionist)
+
+
+Body: { status: "in-progress" | "done" | "skipped" }. Transitions: waiting->in-progress or skipped; in_progress->done.
+
+Parameters
+Cancel
+Name	Description
+id *
+integer
+(path)
+549
+Request body
+
+application/json
+Edit Value
+Schema
+{
+  "status": "in-progress"
+}
+Execute
+Clear
+Responses
+Curl
+
+curl -X 'PATCH' \
+  'https://cmsback.sampaarsh.cloud/queue/549' \
+  -H 'accept: */*' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjU0OSwicm9sZSI6InJlY2VwdGlvbmlzdCIsImNsaW5pY0lkIjo1MDgsImlhdCI6MTc3MzcyOTg2MCwiZXhwIjoxNzc0MzM0NjYwfQ.sBWtXzB8xBJxZo1_lfqdyL52J5ThL-zeTIioXYuEWdQ' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "status": "in-progress"
+}'
+Request URL
+https://cmsback.sampaarsh.cloud/queue/549
+Server response
+Code	Details
+404	
+Error: Not Found
+
+Response body
+Download
+{
+  "error": "Queue entry not found"
+}
+Response headers
+ access-control-allow-credentials: true 
+ access-control-allow-origin: https://cmsback.sampaarsh.cloud 
+ connection: keep-alive 
+ content-length: 33 
+ content-type: application/json; charset=utf-8 
+ date: Tue,17 Mar 2026 06:45:24 GMT 
+ etag: W/"21-2p0+4egSf4OodzkyA1GLkXpxTio" 
+ server: nginx/1.24.0 (Ubuntu) 
+ vary: Origin 
+ x-powered-by: Express 
+Responses
+Code	Description	Links
+200	
+Updated queue entry
+
+No links
+400	
+Invalid status or transition
+
+No links
+401	
+Token missing or invalid
+
+No links
+403	
+Forbidden
+
+No links
+404	
+Queue entry not found
+
+Doctor: add; Patient: list own
+
+
+
+GET
+/reports/my
+My reports (Patient)
+
+
+
+POST
+/reports/{appointmentId}
+Add report (Doctor)
+
+
+--------
+Report
+appointmentId from GET /doctor/queue.
+
+Parameters
+Cancel
+Name	Description
+appointmentId *
+integer
+(path)
+961
+Request body
+
+application/json
+Edit Value
+Schema
+{
+  "diagnosis": "Viral Fever",
+  "testRecommended": "Blood Test",
+  "remarks": "Rest for 3 days"
+}
+Execute
+Responses
+Code	Description	Links
+201	
+Report created
+
+No links
+400	
+Validation failed
+
+No links
+401	
+Token missing or invalid
+
+No links
+403	
+Forbidden
+
+No links
+404	
+Appointment not found
+
+octor: today's queue
+
+
+
+GET
+/doctor/queue
+Today's queue (Doctor)
+
+
+Queue for today. Returns id, tokenNumber, status, patientName, patientId, appointmentId. Use appointmentId for prescription/report.
+
+Parameters
+Cancel
+No parameters
+
+Execute
+Clear
+Responses
+Curl
+
+curl -X 'GET' \
+  'https://cmsback.sampaarsh.cloud/doctor/queue' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjU1OCwicm9sZSI6ImRvY3RvciIsImNsaW5pY0lkIjo1MDgsImlhdCI6MTc3MzczMDQyOCwiZXhwIjoxNzc0MzM1MjI4fQ.3lVDId8WX7zjEJ6sVO5pFUZPFS85ZV1bgKcMGoMcNMc'
+Request URL
+https://cmsback.sampaarsh.cloud/doctor/queue
+Server response
+Code	Details
+200	
+Response body
+Download
+[]
+Response headers
+ access-control-allow-credentials: true 
+ content-length: 2 
+ content-type: application/json; charset=utf-8 
+ date: Tue,17 Mar 2026 06:57:35 GMT 
+ etag: W/"2-l9Fw4VUO7kr8CvBlt4zaMCqXZ0w" 
+ server: nginx/1.24.0 (Ubuntu) 
+ vary: Origin 
+ x-powered-by: Express 
+Responses
+Code	Description	Links
+200	
+List
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+[
+  {
+    "id": 0,
+    "tokenNumber": 0,
+    "status": "string",
+    "patientName": "string",
+    "patientId": 0,
+    "appointmentId": 0
+  }
+]
+No links
+401	
+Token missing or invalid
+
+No links
+403	
+Forbidden
+
+Doctor: add; Patient: list own
+
+
+
+GET
+/prescriptions/my
+My prescriptions (Patient)
+
+
+
+POST
+/prescriptions/{appointmentId}
+Add prescription (Doctor)
+
+
+One per appointment. Only for appointment status in_progress or done. appointmentId from GET /doctor/queue.
+
+Parameters
+Cancel
+Name	Description
+appointmentId *
+integer
+(path)
+961
+Request body
+
+application/json
+Edit Value
+Schema
+{
+  "medicines": [
+    {
+      "name": "Paracetamol",
+      "dosage": "500mg",
+      "duration": "5 days"
+    }
+  ],
+  "notes": "After food"
+}
+Execute
+Responses
+Code	Description	Links
+201	
+Prescription created
+
+No links
+400	
+Validation or duplicate or wrong status
+
+No links
+401	
+Token missing or invalid
+
+No links
+403	
+Forbidden
+
+No links
+404	
+Appointment not found

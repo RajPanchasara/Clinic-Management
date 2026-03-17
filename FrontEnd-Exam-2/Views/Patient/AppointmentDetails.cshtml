@@ -1,0 +1,163 @@
+@using FrontEnd_Exam_2.Models
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Appointment Details";
+    var apt = ViewBag.Appointment as Appointment;
+}
+
+<main id="main" class="main">
+
+    <div class="pagetitle">
+        <h1>Appointment Details</h1>
+        <nav>
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a asp-controller="Patient" asp-action="MyAppointments">My Appointments</a></li>
+                <li class="breadcrumb-item active">Details</li>
+            </ol>
+        </nav>
+    </div>
+
+    @if (!string.IsNullOrEmpty(ViewBag.Error as string))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            @ViewBag.Error
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (apt != null)
+    {
+        <section class="section">
+            <div class="row">
+
+                <!-- Appointment Info -->
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title"><i class="bi bi-calendar-event me-2"></i>Appointment Info</h5>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <strong>Date</strong> <span>@apt.AppointmentDate</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <strong>Time Slot</strong> <span>@apt.TimeSlot</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <strong>Status</strong>
+                                    @{
+                                        var statusBadge = apt.Status switch
+                                        {
+                                            "scheduled" => "bg-info",
+                                            "queued" => "bg-info",
+                                            "waiting" => "bg-warning text-dark",
+                                            "in-progress" => "bg-primary",
+                                            "in_progress" => "bg-primary",
+                                            "done" => "bg-success",
+                                            "skipped" => "bg-secondary",
+                                            _ => "bg-secondary"
+                                        };
+                                    }
+                                    <span class="badge @statusBadge">@apt.Status.ToUpper()</span>
+                                </li>
+                                @if (apt.QueueEntry != null)
+                                {
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <strong>Token Number</strong> <span class="badge bg-dark">@apt.QueueEntry.TokenNumber</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <strong>Queue Status</strong> <span>@apt.QueueEntry.Status</span>
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Prescription -->
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title"><i class="bi bi-capsule me-2"></i>Prescription</h5>
+                            @if (apt.Prescription != null && apt.Prescription.Medicines.Count > 0)
+                            {
+                                <table class="table table-sm table-bordered">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Medicine</th>
+                                            <th>Dosage</th>
+                                            <th>Duration</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var med in apt.Prescription.Medicines)
+                                        {
+                                            <tr>
+                                                <td>@med.Name</td>
+                                                <td>@med.Dosage</td>
+                                                <td>@med.Duration</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                                @if (!string.IsNullOrEmpty(apt.Prescription.Notes))
+                                {
+                                    <p class="text-muted"><strong>Notes:</strong> @apt.Prescription.Notes</p>
+                                }
+                            }
+                            else
+                            {
+                                <div class="alert alert-info mb-0">
+                                    <i class="bi bi-info-circle me-1"></i> No prescription added yet.
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Report -->
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title"><i class="bi bi-file-medical me-2"></i>Report</h5>
+                            @if (apt.Report != null && !string.IsNullOrEmpty(apt.Report.Diagnosis))
+                            {
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <strong>Diagnosis</strong> <span>@apt.Report.Diagnosis</span>
+                                    </li>
+                                    @if (!string.IsNullOrEmpty(apt.Report.TestRecommended))
+                                    {
+                                        <li class="list-group-item d-flex justify-content-between">
+                                            <strong>Test Recommended</strong> <span>@apt.Report.TestRecommended</span>
+                                        </li>
+                                    }
+                                    @if (!string.IsNullOrEmpty(apt.Report.Remarks))
+                                    {
+                                        <li class="list-group-item d-flex justify-content-between">
+                                            <strong>Remarks</strong> <span>@apt.Report.Remarks</span>
+                                        </li>
+                                    }
+                                </ul>
+                            }
+                            else
+                            {
+                                <div class="alert alert-info mb-0">
+                                    <i class="bi bi-info-circle me-1"></i> No report added yet.
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    }
+
+    <div class="mt-2">
+        <a asp-controller="Patient" asp-action="MyAppointments" class="btn btn-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Back to Appointments
+        </a>
+    </div>
+
+</main>
